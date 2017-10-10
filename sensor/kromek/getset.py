@@ -26,9 +26,11 @@ def get_value(connection, param='serial', max_attempts=10):
 
             elif param == 'measurement':
                 connection.send(kromek.Message(type=kromek.MessageType.GET_16BIT_SPECTRUM))
-
             elif param == 'gain':
                 connection.send(kromek.Message(type=kromek.MessageType.GET_GAIN))
+
+            elif param == 'bias':
+                connection.send(kromek.Message(type=kromek.MessageType.GET_BIAS))
 
             elif param == 'lld-g':
                 connection.send(kromek.Message(type=kromek.MessageType.GET_LLD,
