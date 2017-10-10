@@ -68,7 +68,7 @@ def readSensorAndUpload(ip):
 
     try:
         sdata = {}
-        for group in ['serial','status','measurement','gain','lld-g','lld-n']:
+        for group in ['serial','status','measurement','gain','bias','lld-g','lld-n']:
             res = kromek.get_value(cfg['kconn'],param=group)
             for k in res:
                 sdata[k] = res[k]
@@ -158,9 +158,9 @@ def mymain(cfg):
     running = True;
     consec_net_errs = 0
 
-    last = datetime.datetime.now()
-    last_ping = datetime.datetime.now()
-    last_cfg_check = datetime.datetime.now()
+    last = datetime.datetime.fromtimestamp(0)
+    last_ping = datetime.datetime.fromtimestamp(0)
+    last_cfg_check = datetime.datetime.fromtimestamp(0)
 
     while running:
         now = datetime.datetime.now()
@@ -184,7 +184,7 @@ def mymain(cfg):
 
         if now - last_cfg_check > datetime.timedelta(seconds=cfg['config_check_period']):
             last_cfg_check = now
-            configOverride(cfg)
+            configRemoteOverride(cfg)
 
         time.sleep(cfg['tick_length']);
         count += 1
