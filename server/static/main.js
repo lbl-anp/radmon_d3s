@@ -25,15 +25,31 @@ var makeChartFromArray = function(type, target, data, options = null) {
 
         chart.draw(cdata, options);
     };
-
     drawChart();
 };
 
 
+var makeUL = function(target, data, names) {
+    removeChildren(target);
+    var ul = document.createElement('ul');
+    target.appendChild(ul);
+    var pns = Object.keys(names);
+    for (var i=0;i<pns.length;i++) {
+        var friendly_name = pns[i];
+        var data_name = names[friendly_name].n;
+        var unit = names[friendly_name].u;
+        try {
+            var li = document.createElement('li');
+            li.innerText = friendly_name + ': ' + data[data_name] + ' ' + unit;
+            ul.appendChild(li);
+        } catch (e) {
+        }
+    }
+};
+
 var makeLeft = function(name, d) {
     console.log(d.sensor_data);
     var tdl = senselems[name].tdl;    
-    // tdl.innerText = JSON.stringify(d);
     var cdiv = document.createElement('div');
     removeChildren(tdl);
     tdl.appendChild(cdiv);
@@ -49,52 +65,32 @@ var makeLeft = function(name, d) {
                        {'title':name});
 };
 
-var pnames0 = {
-    'Neutron Count': { n: 'neutron_count', u: '' },
-    'Integration Time': { n: 'time', u: 'ms' },
-    'Temperature': { n: 'temperature', u: '\u2103' },
-    'Device Serial': { n: 'serial', u: '' },
-    'Gain': {n : 'gain', u: '' },
-    'LLD (gamma)': { n: 'lld-g', u: '' },
-    'LLD (neutron)': { n: 'lld-n', u: '' },
+var tablenames = {
+    sensor_fields: {
+        'Neutron Count': { n: 'neutron_count', u: '' },
+        'Integration Time': { n: 'time', u: 'ms' },
+        'Temperature': { n: 'temperature', u: '\u2103' },
+        'Device Serial': { n: 'serial', u: '' },
+        'Gain': {n : 'gain', u: '' },
+        'Bias': {n : 'bias', u: '' },
+        'LLD (gamma)': { n: 'lld-g', u: '' },
+        'LLD (neutron)': { n: 'lld-n', u: '' },
+    },
+    message_fields: {
+        'Date': { n: 'date', u: '' },
+        'Node Name': { n: 'sensor_name', u: '' },
+        'Source IP': { n: 'source_ip', u: '' },
+    },
 };
 
 var makeCenter = function(name, d) {
     var tdc = senselems[name].tdc;    
-    removeChildren(tdc);
-    var ul = document.createElement('ul');
-    tdc.appendChild(ul);
-    var pns = Object.keys(pnames0);
-    for (var i=0;i<pns.length;i++) {
-        var friendly_name = pns[i];
-        var data_name = pnames0[friendly_name].n;
-        var unit = pnames0[friendly_name].u;
-        var li = document.createElement('li');
-        li.innerText = friendly_name + ': ' + d.sensor_data[data_name] + ' ' + unit;
-        ul.appendChild(li);
-    }
-};
-
-var pnames1 = {
-    'Date': { n: 'date', u: '' },
-    'Node Name': { n: 'sensor_name', u: '' },
-    'Source IP': { n: 'source_ip', u: '' },
+    makeUL(tdc, d.sensor_data, tablenames.sensor_fields);
 };
 
 var makeRight = function(name, d) {
     var tdr = senselems[name].tdr;    
-    removeChildren(tdr);
-    var ul = document.createElement('ul');
-    tdr.appendChild(ul);
-    var pns = Object.keys(pnames1);
-    for (var i=0;i<pns.length;i++) {
-        var friendly_name = pns[i];
-        var data_name = pnames1[friendly_name].n;
-        var unit = pnames1[friendly_name].u;
-        var li = document.createElement('li');
-        li.innerText = friendly_name + ': ' + d[data_name] + ' ' + unit;
-        ul.appendChild(li);
-    }
+    makeUL(tdr, d, tablenames.message_fields);
 };
 
 
@@ -161,9 +157,8 @@ var checkData = function(name, cb) {
 };
 
 
-
-var makeSensorDivs = function(senslist,cb) {
-    console.log('makeSensorDivs()');
+var makeDeviceLayout = function(senslist,cb) {
+    console.log('makeDeviceLayout()');
     var topdiv = document.getElementById('topdiv');
     var toptable = document.createElement('table');
     toptable.style.width = "100%";
@@ -217,7 +212,7 @@ var init = function() {
         getSensorList(function(err,insensors) {
             console.log(insensors);
             if (!err) {
-                makeSensorDivs(insensors, function() {
+                makeDeviceLayout(insensors, function() {
                     startTimer();
                 });
             }
