@@ -105,15 +105,18 @@ class ServerConnection(object):
         self._paramsLocalOverride(params)
         self._paramsRemoteOverride(params)
 
+    def _replkeys(self, dst, src, label = ''):
+        for key in src:
+            if key not in self.non_override_keys:
+                print('[{0}] Override params[{1}] = {2}'.format(label,key,json.dumps(src[key])))
+                dst[key] = src[key]
+
     def _paramsLocalOverride(self,params):
         fn = self.config['params_path']
         try:
             with open(fn,'r') as fh:
                 data = json.loads(fh.read())
-                for key in data:
-                    if key not in self.non_override_keys:
-                        print('Local override params[{0}] = {1}'.format(key,json.dumps(data[key])))
-                        params[key] = data[key]
+                self._replkeys(params, data, 'local')
         except Exception as e:
             print('Got exception reading local overrides');
             print(e)
@@ -126,10 +129,7 @@ class ServerConnection(object):
             res = requests.get(url, timeout=30)
             if res.status_code == 200:
                 data = res.json()
-                for key in data:
-                    if ket not in self.non_override_keys:
-                        print('Remote override params[{0}] = {1}'.format(key,json.dumps(data[key])))
-                        params[key] = data[key]
+                self._replkeys(params, data, 'remote')
             else:
                 print('Got error code fetching params from server.')
         except Exception as e:
