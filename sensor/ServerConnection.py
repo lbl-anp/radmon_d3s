@@ -55,7 +55,7 @@ class ServerConnection(object):
     def ping(self):
         try:
             print('ping()')
-            now = datetime.datetimenow()
+            now = datetime.datetime.now()
             data = {
                 'sensor_name': self.creds.get('sensor_name',''),
                 'token': self.creds['token'],
@@ -71,7 +71,8 @@ class ServerConnection(object):
                 self.stats['consec_net_errs'] += 1
                 self.stats['ping_failures'] += 1
             return res
-        except:
+        except Exception as e:
+            print(e)
             return None
 
 
