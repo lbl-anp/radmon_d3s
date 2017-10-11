@@ -157,7 +157,6 @@ class ServerConnection(object):
             'provtok': provtok,
             'name': name,
         }
-        print(reqdata)
         res = requests.post(self.config['url_base'] + '/device/setup/' + name, reqdata)
         print(res)
         if res.status_code == 200:
