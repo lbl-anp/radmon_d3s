@@ -20,6 +20,8 @@ class ServerConnection(object):
             raise Exception('server_url_base_not_provided')
         if not self.config.get('device_serial',None):
             raise Exception('device_serial_identifier_not_provided')
+        if not self.config.get('device_type',None):
+            self.config['device_type'] = 'generic'
 
         if not self.config.get('post_url',None):
                 self.config['post_url'] = self.config['url_base'] + '/newdata'
@@ -57,7 +59,7 @@ class ServerConnection(object):
             data = {
                 'sensor_name': self.creds.get('sensor_name',''),
                 'token': self.creds['token'],
-                'source': 'kromek_d3s',
+                'source_type': self.config['device_type'],
                 'date': now.isoformat(),
                 'source_ip': self.ip,
             }

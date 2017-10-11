@@ -38,6 +38,7 @@ def pre_run():
         'credentials_path': './credentials.json',
         'params_path': './device_params.json',
         'device_name': None,
+        'device_type': 'kromek_d3s',
         'device_serial': ser['serial'],
     }
 
