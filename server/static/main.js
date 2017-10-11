@@ -97,10 +97,9 @@ var makeRight = function(name, d) {
 };
 
 
-
 var getSensorList = function(cb) {
     console.log('getSensorList()');
-    getJSON('/radmon/sensornames', function(err, data) {
+    getJSON('/radmon/app/sensornames', function(err, data) {
         if (err) {
             console.log('Error getting sensor list: ' + err);
             return cb(err);
@@ -112,7 +111,7 @@ var getSensorList = function(cb) {
 
 var checkData = function(name, cb) {
     console.log('checkData()');
-    getJSON('/radmon/status/' + name, function(err, new_data) {
+    getJSON('/radmon/app/status/' + name, function(err, new_data) {
         var old_data = current_results[name];
     
         if (err) {
