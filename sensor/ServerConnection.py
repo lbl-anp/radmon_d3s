@@ -5,7 +5,6 @@ import requests
 from urllib.parse import urlencode
 import json
 import datetime
-from sys import exit
 
 
 
@@ -176,11 +175,10 @@ class ServerConnection(object):
                     return creds
                 else:
                     print('Could not self-provision. Exiting.')
-                    exit(-1)
+                    raise Exception('self_provisioning_bad_result_or_could_not_store')
             except Exception as f:
                 print('Self provisioning failed.')
-                print(f)
-                exit(-2)
+                raise Exception('self_provisioning_failed')
 
 
 
