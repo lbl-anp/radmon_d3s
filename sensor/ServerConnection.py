@@ -45,6 +45,9 @@ class ServerConnection(object):
     def getStats(self):
         return { k:self.stats[k] for k in self.stats }
 
+    def httpOK(self,n):
+        return n >= 200 and n < 300
+
     def ping(self):
         try:
             print('ping()')
@@ -58,11 +61,11 @@ class ServerConnection(object):
             }
             res = requests.post(self.config['ping_url'], data = data, timeout=20)
             self.stats['ping_attempts'] += 1
-            if res.status_code != 200:
+            if self.httpOK(res.status_code):
+                self.stats['consec_net_errs'] = 0
+            else:
                 self.stats['consec_net_errs'] += 1
                 self.stats['ping_failures'] += 1
-            else:
-                self.stats['consec_net_errs'] = 0
             return res
         except:
             return None
@@ -82,11 +85,11 @@ class ServerConnection(object):
         }
         res = requests.post(self.config['post_url'], json = data, timeout=60)
         self.stats['push_attempts'] += 1
-        if res.status_code != 200:
+        if self.httpOK(res.status_code):
+            self.stats['consec_net_errs'] = 0
+        else:
             self.stats['consec_net_errs'] += 1
             self.stats['push_failures'] += 1
-        else:
-            self.stats['consec_net_errs'] = 0
         return res
 
 
