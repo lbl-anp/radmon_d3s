@@ -1,8 +1,5 @@
+var Provisioner   = require('./Provisioner');
 var fs = require('fs');
-
-var DataAcceptor = function(pv) {
-    this.pv = pv;
-};
 
 function copyWithoutKey(ind, banned) {
     var od = {};
@@ -13,6 +10,23 @@ function copyWithoutKey(ind, banned) {
     }
     return od;
 }
+
+
+var DataAcceptor = function(dev_config) {
+    this.config = dev_config;
+    this.pv = new Provisioner(this.config.provisioned_clients_path,
+                              this.config.provisioning_tokens_path);
+    this.pv.load();
+    this.setupDefaults();
+    this.loadSensorParams();
+};
+
+DataAcceptor.prototype.setupRoutes = function(router) {
+    router.post('/push',         this.handleDataPost.bind(this));
+    router.post('/ping',         this.handleStillHere.bind(this));
+    router.get('/params/:name',  this.handleParamsGet.bind(this));
+    router.post('/setup/:name',  this.handleProvision.bind(this));
+};
 
 
 DataAcceptor.prototype.handleProvision = function(req, res) {
@@ -34,8 +48,8 @@ DataAcceptor.prototype.handleProvision = function(req, res) {
 };
 
 
-DataAcceptor.prototype.setSensorParams = function(cps) {
-    this.cparams = cps;
+DataAcceptor.prototype.loadSensorParams= function() {
+    this.cparams = JSON.parse(fs.readFileSync(this.config.device_params_path, 'utf8'));
 };
 
 
@@ -128,29 +142,6 @@ DataAcceptor.prototype.handleDataPost = function(req, res) {
     }
 };
 
-
-DataAcceptor.prototype.handleListGet = function(req, res) {
-    console.log('GET list of sensors');
-    var cstates = this.cstates;
-    rv = Object.keys(cstates);
-    res.json(rv);
-};
-
-
-DataAcceptor.prototype.handleStatusGet = function(req, res) {
-    console.log('GET sensor status!');
-    var name = req.params.name;
-    var cstate = this.cstates[name] || null;
-    rv = {};
-    if (cstate) {
-        Object.keys(cstate).forEach(function(k) {
-            if (k !== 'image_jpeg') rv[k] = cstate[k];
-        });
-    } else {
-        rv.message = 'no such sensor';
-    }
-    res.json(rv);
-};
 
 
 module.exports = DataAcceptor;

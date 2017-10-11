@@ -83,9 +83,9 @@ function thingInThings(things, kname, kvalue) {
     for (var i=0; i<keys.length; i++) {
         var key = keys[i];
         var kv = things[key][kname] || null;
-        if (kv && (kv == kvalue)) return true;
+        if (kv && (kv == kvalue)) return key;
     }
-    return false;
+    return null;
 }
 
 Provisioner.prototype.create_new = function(name, serial, nows) {
@@ -119,7 +119,7 @@ Provisioner.prototype.provision = function(req) {
 
     var nows = (new Date()).toISOString();
     var serial_in_use = thingInThings(this.provisioned, 'serial_number', serial);
-
+    var d = null;
     if (this.provTokValid(provtok)) {
         var existing = this.provisioned[name] || null;
         if (existing) {
@@ -133,9 +133,20 @@ Provisioner.prototype.provision = function(req) {
                return null;
            }
         } else if (serial_in_use) {
-            return null;
+            var provisioning_attempts = this.provisioned[serial_in_use].provisioning_attempts;
+            if (provisioning_attempts < MAX_PROV_ATTEMPTS) {
+                d = this.create_new(serial_in_use, serial, nows);
+                provisioning_attempts += 1;
+                d.new_entry.provisioning_attempts = provisioning_attempts;
+                d.return_data.provisioning_attempts = provisioning_attempts;
+                this.provisioned[serial_in_use] = d.new_entry;
+                this.saveProvisioned();
+                return d.return_data;
+            } else {
+                return null;
+            }
         } else {
-            var d = this.create_new(name, serial, nows);
+            d = this.create_new(name, serial, nows);
             this.provisioned[name] = d.new_entry;
             this.saveProvisioned();
             return d.return_data;
