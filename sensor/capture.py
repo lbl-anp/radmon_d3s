@@ -105,6 +105,7 @@ def mymain(cfg):
             last = now
             sdata = readSensor()
             res = cfg['sconn'].push(sdata)
+            print(res)
             did_upload = True
 
         if not did_upload and now - last_ping > datetime.timedelta(seconds=cfg['ping_period']):
