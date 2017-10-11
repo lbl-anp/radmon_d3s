@@ -13,7 +13,7 @@ class ServerConnection(object):
     def __init__(self, server_config):
 
         self.config = server_config
-
+ 
         if not self.config.get('credentials_path',None):
             raise Exception('credential_path_not_provided')
         if not self.config.get('url_base',None):
@@ -32,7 +32,10 @@ class ServerConnection(object):
             'push_failures': 0,
             'ping_attempts': 0,
             'ping_failures': 0,
-
+        }
+        self.non_override_keys = {
+            'sconn': 1,
+            'kconn': 1,
         }
         self.ip = self._myIP()
 
@@ -108,8 +111,9 @@ class ServerConnection(object):
             with open(fn,'r') as fh:
                 data = json.loads(fh.read())
                 for key in data:
-                    print('Local override params[{0}] = {1}'.format(key,json.dumps(data[key])))
-                    params[key] = data[key]
+                    if key not in self.non_override_keys:
+                        print('Local override params[{0}] = {1}'.format(key,json.dumps(data[key])))
+                        params[key] = data[key]
         except Exception as e:
             print('Got exception reading local overrides');
             print(e)
@@ -123,8 +127,9 @@ class ServerConnection(object):
             if res.status_code == 200:
                 data = res.json()
                 for key in data:
-                    print('Remote override params[{0}] = {1}'.format(key,json.dumps(data[key])))
-                    params[key] = data[key]
+                    if ket not in self.non_override_keys:
+                        print('Remote override params[{0}] = {1}'.format(key,json.dumps(data[key])))
+                        params[key] = data[key]
             else:
                 print('Got error code fetching params from server.')
         except Exception as e:
