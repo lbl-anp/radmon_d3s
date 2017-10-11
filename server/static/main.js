@@ -75,6 +75,9 @@ var tablenames = {
         'Bias': {n : 'bias', u: '' },
         'LLD (gamma)': { n: 'lld-g', u: '' },
         'LLD (neutron)': { n: 'lld-n', u: '' },
+        'Battery Level': { n: 'batteryLevel', u: '%' },
+        'Charge Rate': { n: 'batteryChargeRate', u: '' },
+        'Battery Temp': { n: 'batteryTemperature', u: '\u2103' },
     },
     message_fields: {
         'Date': { n: 'date', u: '' },
