@@ -94,6 +94,23 @@ var makeCenter = function(name, d) {
 var makeRight = function(name, d) {
     var tdr = senselems[name].tdr;    
     makeUL(tdr, d, tablenames.message_fields);
+    var el = document.createElement('p');
+    now = new Date();
+    var latest = new Date(0);
+    if (d.date) latest = new Date(d.date);
+    if (d.ping && d.ping.date) {
+        var x = new Date(d.ping.date);
+        if (x > latest) latest = x;
+    }
+
+    if ((now - latest) > (5 * 60 * 1000)) {
+        el.innerText = 'Device is probably DOWN';
+        el.style.color = 'red';
+    } else {
+        el.innerText = 'Device is probably UP';
+        el.style.color = 'green';
+    }
+    tdr.appendChild(el);
 };
 
 
