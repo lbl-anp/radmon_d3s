@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 
-import sys
+from sys import exit
 import time
-import io
 import datetime
-import string
-import random
-import base64
-import json
-import requests
 import kromek
-from urllib.parse import urlencode
 import ServerConnection
 
 def pre_run():
@@ -100,7 +93,7 @@ def mymain(cfg):
 
         if cfg['sconn'].getStats()['consec_net_errs'] > cfg['max_consec_net_errs']:
             print('Network not working. I\'m going to kill myself and presumably systemd will restart me.')
-            sys.exit(-10)
+            exit(-10)
 
         did_upload = False
         if now - last > datetime.timedelta(seconds=cfg['upload_period']):
