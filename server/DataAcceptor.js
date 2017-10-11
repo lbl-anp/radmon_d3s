@@ -148,6 +148,7 @@ DataAcceptor.prototype.handleDataPost = function(req, res) {
        var sensor_name= b.sensor_name;
        var cstate = this.getdevicestate(sensor_name);
        if (!cstate) {
+           console.log('unknown device: ' + sensor_name);
            res.status('403');
            res.json({message:'unknown device'});
            return;

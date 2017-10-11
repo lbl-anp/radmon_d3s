@@ -133,6 +133,7 @@ Provisioner.prototype.provision = function(req) {
                return null;
            }
         } else if (serial_in_use) {
+            // console.log('serial_in_use: ' + serial_in_use);
             var provisioning_attempts = this.provisioned[serial_in_use].provisioning_attempts;
             if (provisioning_attempts < MAX_PROV_ATTEMPTS) {
                 d = this.create_new(serial_in_use, serial, nows);
