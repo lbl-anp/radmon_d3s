@@ -24,9 +24,9 @@ class ServerConnection(object):
             self.config['device_type'] = 'generic'
 
         if not self.config.get('post_url',None):
-                self.config['post_url'] = self.config['url_base'] + '/newdata'
+                self.config['post_url'] = self.config['url_base'] + '/device/push'
         if not self.config.get('ping_url',None):
-                self.config['ping_url'] = self.config['url_base'] + '/stillhere'
+                self.config['ping_url'] = self.config['url_base'] + '/device/ping'
 
         self.stats = {
             'consec_net_errs': 0,
@@ -44,7 +44,7 @@ class ServerConnection(object):
         self.creds  = self._loadCredentials()
 
         if not self.config.get('params_url',None):
-                self.config['params_url'] = self.config['url_base'] + '/sensorparams/' + self.creds['sensor_name']
+                self.config['params_url'] = self.config['url_base'] + '/device/params/' + self.creds['sensor_name']
 
     def getStats(self):
         return { k:self.stats[k] for k in self.stats }
@@ -158,7 +158,7 @@ class ServerConnection(object):
             'name': name,
         }
         print(reqdata)
-        res = requests.post(self.config['url_base'] + '/setup/' + name, reqdata)
+        res = requests.post(self.config['url_base'] + '/device/setup/' + name, reqdata)
         print(res)
         if res.status_code == 200:
             resdata = res.json()
