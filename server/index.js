@@ -9,6 +9,17 @@ var file_helpers  = require('./static_helpers');
 var app           = express();
 var port = process.env.TURKEY_PORT || 9090;
 
+var setup_debug_hooks = function(da) {
+
+    var w = function(hname,sname) {
+        console.log('Device action: [' + hname + '] ' + sname);
+    };
+    da.setHook('provision',w);
+    da.setHook('push',w);
+    da.setHook('ping',w);
+    da.setHook('getparams',w);
+};
+
 if (require.main === module) {
 
     var dev_config = {
@@ -21,6 +32,7 @@ if (require.main === module) {
     };
 
     var da = new DataAcceptor(dev_config);
+    setup_debug_hooks(da);
     var ar = new AppRoutes(app_config, da);
 
     var toprouter = express.Router();

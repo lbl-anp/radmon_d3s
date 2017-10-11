@@ -1,3 +1,4 @@
+/* jshint esversion: 6 */
 var Provisioner   = require('./Provisioner');
 var fs = require('fs');
 
@@ -19,6 +20,7 @@ var DataAcceptor = function(dev_config) {
     this.pv.load();
     this.setupDefaults();
     this.loadSensorParams();
+    this.hooks = {};
 };
 
 DataAcceptor.prototype.setupRoutes = function(router) {
@@ -28,6 +30,23 @@ DataAcceptor.prototype.setupRoutes = function(router) {
     router.post('/setup/:name',  this.handleProvision.bind(this));
 };
 
+DataAcceptor.prototype.setHook = function(name,func) {
+    if (name && name.length && (typeof func === 'function')) {
+        this.hooks[name] = func;
+    } else {
+        console.warn('hook not set for ' + name);
+    }
+};
+
+DataAcceptor.prototype.fireHook = function(name, data) {
+    if (this.hooks.hasOwnProperty(name)) {
+        try {
+            this.hooks[name](name, data);
+        } catch (e) {
+            console.err(e);
+        }
+    }
+};
 
 DataAcceptor.prototype.handleProvision = function(req, res) {
     var arg = {
@@ -37,10 +56,11 @@ DataAcceptor.prototype.handleProvision = function(req, res) {
     };
     var rv = this.pv.provision(arg);
     if (rv) {
-        this.getcstate(rv.sensor_name);
+        this.getdevicestate(rv.sensor_name);
         res.status('200');
         var sv = copyWithoutKey(rv, 'serial_number');
         res.json(sv);
+        this.fireHook('provision',rv.sensor_name);
         return;
     }
     res.status('403');
@@ -53,14 +73,17 @@ DataAcceptor.prototype.loadSensorParams= function() {
 };
 
 
-DataAcceptor.prototype.getcstate = function(name) {
+DataAcceptor.prototype.getdevicelist= function() {
+    return Object.keys(this.cstates);
+};
+
+DataAcceptor.prototype.getdevicestate = function(name, startup = false) {
     var cs = this.cstates[name] || null;
-    if (!cs) {
+    if (startup && !cs) {
         cs = {
             sensor_name: name,
             busy: false,
             valid: false,
-            image_number: 0,
         };
         this.cstates[name] = cs;
     }
@@ -73,7 +96,7 @@ DataAcceptor.prototype.setupDefaults = function() {
     this.cstates = cstates;
     var othis = this;
     Object.keys(this.pv.getProvisioned()).forEach(function(sensor_name) {
-        othis.getcstate(sensor_name);
+        othis.getdevicestate(sensor_name, true);
     });
 };
 
@@ -84,6 +107,7 @@ DataAcceptor.prototype.handleParamsGet = function(req, res) {
         res.status(200);
         if (this.cparams.hasOwnProperty(b.sensor_name)) {
             res.json(this.cparams[b.sensor_name]);
+            this.fireHook('getparams',b.sensor_name);
         } else {
             res.json({});
         }
@@ -100,13 +124,14 @@ DataAcceptor.prototype.handleStillHere = function(req, res) {
     var b = req.body;
     if (this.pv.tokValid(b)) {
        var sensor_name= b.sensor_name;
-       var cstate = this.getcstate(sensor_name);
+       var cstate = this.getdevicestate(sensor_name);
        cstate.ping = {
            'date': b.date,
            'source_ip': b.source_ip,
        };
        res.status(200);
        res.json({message: 'thanks!' });
+       this.fireHook('ping',sensor_name);
        return;
     }
     res.status(403);
@@ -121,7 +146,7 @@ DataAcceptor.prototype.handleDataPost = function(req, res) {
     // console.log(JSON.stringify(b,null,2));
     if (this.pv.tokValid(b)) {
        var sensor_name= b.sensor_name;
-       var cstate = this.getcstate(sensor_name);
+       var cstate = this.getdevicestate(sensor_name);
        if (!cstate) {
            res.status('403');
            res.json({message:'unknown device'});
@@ -136,6 +161,7 @@ DataAcceptor.prototype.handleDataPost = function(req, res) {
        cstate.busy = false;
        res.status(200);
        res.json({message: 'thanks!', upload_number: cstate.upload_number});
+       this.fireHook('push',sensor_name);
     } else {
        res.status(403);
        res.json({ message: 'nope.' });

@@ -11,15 +11,14 @@ AppRoutes.prototype.setupRoutes = function(router) {
 
 AppRoutes.prototype.handleListGet = function(req, res) {
     console.log('GET list of sensors');
-    var cstates = this.da.cstates;
-    rv = Object.keys(cstates);
-    res.json(rv);
+    var devlist = this.da.getdevicelist();
+    res.json(devlist);
 };
 
 AppRoutes.prototype.handleStatusGet = function(req, res) {
     console.log('GET sensor status!');
     var name = req.params.name;
-    var cstate = this.da.cstates[name] || null;
+    var cstate = this.da.getdevicestate(name) || null;
     rv = {};
     if (cstate) {
         Object.keys(cstate).forEach(function(k) {
