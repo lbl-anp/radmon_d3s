@@ -81,7 +81,7 @@ var tablenames = {
     },
     message_fields: {
         'Date': { n: 'date', u: '' },
-        'Node Name': { n: 'sensor_name', u: '' },
+        'Node Name': { n: 'node_name', u: '' },
         'Source IP': { n: 'source_ip', u: '' },
         'Host': { n: 'source_host', u: '' },
         'Type': { n: 'source_type', u: '' },
