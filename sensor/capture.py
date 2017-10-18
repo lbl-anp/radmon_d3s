@@ -5,6 +5,7 @@ import time
 import datetime
 import kromek
 import ServerConnection
+import TimerLoop
 
 base_config = {
     'upload_period': 60,
@@ -52,7 +53,7 @@ def pre_run():
 
 
 
-def readSensor():
+def readSensor(cfg):
     print('readSensor()')
     fake_kromek = False 
 
@@ -79,42 +80,41 @@ def readSensor():
 
 
 
+class CapHandlers(object):
+    def __init__(self, cfg):
+        self.cfg = cfg
 
-def mymain(cfg):
+    def takeReading(self, name, now):
+        sdata = readSensor(self.cfg)
+        res = self.cfg['sconn'].push(sdata)
+        print(res)
+        return False
 
-    count = 0
-    running = True;
-
-    last = datetime.datetime.fromtimestamp(0)
-    last_ping = datetime.datetime.fromtimestamp(0)
-    last_cfg_check = datetime.datetime.fromtimestamp(0)
-
-    while running:
-        now = datetime.datetime.now()
-
-        if cfg['sconn'].getStats()['consec_net_errs'] > cfg['max_consec_net_errs']:
+    def checkNetErrs(self, name, now):
+        if self.cfg['sconn'].getStats()['consec_net_errs'] > self.cfg['max_consec_net_errs']:
             print('Network not working. I\'m going to kill myself and presumably systemd will restart me.')
             exit(-10)
 
-        if now - last_cfg_check > datetime.timedelta(seconds=cfg['config_check_period']):
-            last_cfg_check = now
-            cfg['sconn'].getParams(cfg)
+    def doPing(self, name, now):
+        res = self.cfg['sconn'].ping()
 
-        did_upload = False
-        if now - last > datetime.timedelta(seconds=cfg['upload_period']):
-            last = now
-            sdata = readSensor()
-            res = cfg['sconn'].push(sdata)
-            print(res)
-            did_upload = True
+    def cfgCheck(self, name, now):
+        self.cfg['sconn'].getParams(self.cfg)
 
-        if not did_upload and now - last_ping > datetime.timedelta(seconds=cfg['ping_period']):
-            last_ping = now
-            res = cfg['sconn'].ping();
 
-        time.sleep(cfg['tick_length']);
-        count += 1
-  
+
+def mymain(cfg):
+
+    ch = CapHandlers(cfg)
+    te = TimerLoop.TimerLoop()
+
+    te.addHandler(ch.doPing,       cfg['ping_period'])
+    te.addHandler(ch.takeReading,  cfg['upload_period'])
+    te.addHandler(ch.checkNetErrs, cfg['upload_period'])
+    te.addHandler(ch.cfgCheck,     cfg['config_check_period'])
+
+    te.run(cfg['tick_length'])
+
 
 if __name__ == '__main__':
     try:
