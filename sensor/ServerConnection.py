@@ -6,6 +6,7 @@ from urllib.parse import urlencode
 import json
 import datetime
 import socket
+import os
 
 
 
@@ -189,6 +190,8 @@ class ServerConnection(object):
                 if creds:
                     with open(self.config['credentials_path'],'w') as fh:
                         fh.write(json.dumps(creds))
+                    if False:
+                        os.unlink(self.config['provisioning_token_path'])
                     return creds
                 else:
                     print('Could not self-provision. Exiting.')
