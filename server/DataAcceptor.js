@@ -65,7 +65,7 @@ DataAcceptor.prototype.handleProvision = function(req, res) {
     };
     var rv = this.pv.provision(arg);
     if (rv) {
-        this.getdevicestate(rv.node_name);
+        this.getdevicestate(rv.node_name, true);
         res.status('200');
         var sv = copyWithoutKey(rv, 'serial_number');
         res.json(sv);
