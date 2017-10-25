@@ -16,7 +16,7 @@ AppRoutes.prototype.handleListGet = function(req, res) {
 };
 
 AppRoutes.prototype.handleStatusGet = function(req, res) {
-    console.log('GET sensor status!');
+    // console.log('GET sensor status!');
     var name = req.params.name;
     var cstate = this.da.getdevicestate(name) || null;
     rv = {};
