@@ -42,6 +42,7 @@ class ServerConnection(object):
         }
         self.ip = self._myIP()
         self.hostname = self._myHost()
+        self.initUptime = self._sysUptime();
 
         self.creds  = self._loadCredentials()
 
@@ -67,7 +68,7 @@ class ServerConnection(object):
                     'host': {
                         'ip': self.ip,
                         'name': self.hostname,
-                        'uptime': self._myUptime(),
+                        'uptime': self._strTimeDelta(self._sysUptime()),
                         'stats': self.stats,
                     },
                 },
@@ -99,8 +100,11 @@ class ServerConnection(object):
                 'host': {
                     'ip': self.ip,
                     'name': self.hostname,
-                    'uptime': self._myUptime(),
+                    'uptime': self._strTimeDelta(self._sysUptime()),
+                },
+                'service': {
                     'stats': self.stats,
+                    'uptime': self._strTimeDelta(self._svcUptime()),
                 },
             },
         }
@@ -114,15 +118,18 @@ class ServerConnection(object):
         return res
 
 
-    def _myUptime(self):
-        ut_str = 'unknown'
+    def _strTimeDelta(self,td):
+        return str(datetime.timedelta(seconds = td))
+    def _svcUptime(self):
+        return self._sysUptime() - self.initUptime
+    def _sysUptime(self):
+        ut_seconds = 0
         try:
             with open('/proc/uptime','r') as f:
                 ut_seconds = float(f.readline().split()[0])
-                ut_str = str(timedelta(seconds = ut_seconds))
         except:
             pass
-        return ut_str
+        return ut_seconds
     def _myHost(self):
         host = 'unknown'
         try:
