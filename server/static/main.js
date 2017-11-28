@@ -36,11 +36,25 @@ var makeUL = function(target, data, names) {
     var pns = Object.keys(names);
     for (var i=0;i<pns.length;i++) {
         var friendly_name = pns[i];
-        var data_name = names[friendly_name].n;
+        var data_names = names[friendly_name].n.split(/\./);
         var unit = names[friendly_name].u;
+
+        var dataval = data;
+        try {
+            while (data_names.length) {
+                var dn = data_names.shift();
+                dataval = data[dn];
+            }
+        } catch(e) {
+            dataval = '_missing';
+        }
+
+        if (typeof dataval === 'object') {
+            dataval = JSON.stringify(dataval);
+        }
         try {
             var li = document.createElement('li');
-            li.innerText = friendly_name + ': ' + data[data_name] + ' ' + unit;
+            li.innerText = friendly_name + ': ' + dataval + ' ' + unit;
             ul.appendChild(li);
         } catch (e) {
         }
@@ -82,8 +96,9 @@ var tablenames = {
     message_fields: {
         'Date': { n: 'date', u: '' },
         'Node Name': { n: 'node_name', u: '' },
-        'Source IP': { n: 'source_ip', u: '' },
-        'Host': { n: 'source_host', u: '' },
+        'Source IP': { n: 'diagnostic.host.ip', u: '' },
+        'Host': { n: 'diagnostic.host.name', u: '' },
+        'Uptime': { n: 'diagnostic.host.uptime', u: '' },
         'Type': { n: 'source_type', u: '' },
     },
 };

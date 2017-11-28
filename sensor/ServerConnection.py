@@ -63,8 +63,14 @@ class ServerConnection(object):
                 'token': self.creds['token'],
                 'source_type': self.config['device_type'],
                 'date': now.isoformat(),
-                'source_ip': self.ip,
-                'source_host': self.hostname,
+                'diagnostic': {
+                    'host': {
+                        'ip': self.ip,
+                        'name': self.hostname,
+                        'uptime': self._myUptime(),
+                        'stats': self.stats,
+                    },
+                },
             }
             res = requests.post(self.config['ping_url'], data = data, timeout=20)
             self.stats['ping_attempts'] += 1
@@ -89,8 +95,14 @@ class ServerConnection(object):
             'token': self.creds['token'],
             'source_type': self.config['device_type'],
             'date': now.isoformat(),
-            'source_ip': self.ip,
-            'source_host': self.hostname,
+            'diagnostic': {
+                'host': {
+                    'ip': self.ip,
+                    'name': self.hostname,
+                    'uptime': self._myUptime(),
+                    'stats': self.stats,
+                },
+            },
         }
         res = requests.post(self.config['post_url'], json = data, timeout=60)
         self.stats['push_attempts'] += 1
@@ -102,6 +114,15 @@ class ServerConnection(object):
         return res
 
 
+    def _myUptime(self):
+        ut_str = 'unknown'
+        try:
+            with open('/proc/uptime','r') as f:
+                ut_seconds = float(f.readline().split()[0])
+                ut_str = str(timedelta(seconds = ut_seconds))
+        except:
+            pass
+        return ut_str
     def _myHost(self):
         host = 'unknown'
         try:
