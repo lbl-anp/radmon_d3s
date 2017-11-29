@@ -29,6 +29,26 @@ var makeChartFromArray = function(type, target, data, options = null) {
 };
 
 
+var getDataElementFromDottedName = function(data,name) {
+    var d = data;
+    var names = name.split(/\./);
+    try {
+        while (names.length) {
+            n = names.shift();
+            d = d[n];
+        }
+    } catch(e) {
+        dataval = '_missing';
+    }
+
+    if (typeof d === 'object') {
+        d = JSON.stringify(d);
+    }
+
+    return d;
+};
+
+
 var makeUL = function(target, data, names) {
     removeChildren(target);
     var ul = document.createElement('ul');
@@ -36,22 +56,11 @@ var makeUL = function(target, data, names) {
     var pns = Object.keys(names);
     for (var i=0;i<pns.length;i++) {
         var friendly_name = pns[i];
-        var data_names = names[friendly_name].n.split(/\./);
+        var data_name = names[friendly_name].n;
         var unit = names[friendly_name].u;
 
-        var dataval = data;
-        try {
-            while (data_names.length) {
-                var dn = data_names.shift();
-                dataval = data[dn];
-            }
-        } catch(e) {
-            dataval = '_missing';
-        }
+        var dataval = getDataElementFromDottedName(data,data_name);
 
-        if (typeof dataval === 'object') {
-            dataval = JSON.stringify(dataval);
-        }
         try {
             var li = document.createElement('li');
             li.innerText = friendly_name + ': ' + dataval + ' ' + unit;
@@ -96,9 +105,10 @@ var tablenames = {
     message_fields: {
         'Date': { n: 'date', u: '' },
         'Node Name': { n: 'node_name', u: '' },
-        'Source IP': { n: 'diagnostic.host.ip', u: '' },
-        'Host': { n: 'diagnostic.host.name', u: '' },
-        'Uptime': { n: 'diagnostic.host.uptime', u: '' },
+        'host.ip': { n: 'diagnostic.host.ip', u: '' },
+        'host.name': { n: 'diagnostic.host.name', u: '' },
+        'host.uptime': { n: 'diagnostic.host.uptime', u: '' },
+        'service.uptime': { n: 'diagnostic.service.uptime', u: '' },
         'Type': { n: 'source_type', u: '' },
     },
 };
@@ -121,10 +131,10 @@ var makeRight = function(name, d) {
     }
 
     if ((now - latest) > (5 * 60 * 1000)) {
-        el.innerText = 'Device is probably DOWN';
+        el.innerText = 'Device is DOWN';
         el.style.color = 'red';
     } else {
-        el.innerText = 'Device is probably UP';
+        el.innerText = 'Device is UP';
         el.style.color = 'green';
     }
     tdr.appendChild(el);
