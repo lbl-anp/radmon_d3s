@@ -6,6 +6,9 @@ import datetime
 # that is adequate for some purposes. On LBLnet I can get servers
 # synchronized with to sub-millisecond accurary.
 
+# As an alternative to NTP, NTPd should be disabled if you're using
+# this module.
+
 class Synchronizer():
 
     def __init__(self, **kwargs):
@@ -80,7 +83,7 @@ class Synchronizer():
             delta = self.last_delta
         if delta is None:
             print('No delta provided or stored, so time not set')
-            return
+            return None
 
         old_sys_epoch = time.time()
         new_sys_epoch = old_sys_epoch + delta
@@ -95,5 +98,7 @@ class Synchronizer():
         try:
             time.clock_settime(time.CLOCK_REALTIME, new_sys_epoch)
             print('System clock set.')
+            return new_t
         except Exception as e:
             print('Could not set system clock, probably a permissions thing.')
+            return None
