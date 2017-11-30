@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from sys import exit
+from os import system
 import time
 import datetime
 import kromek
@@ -15,6 +16,19 @@ base_config = {
     'sensor_params': { },
     'max_consec_net_errs': 10,
 }
+
+
+def synchronizeSystemClock():
+    clock_is_set = False
+    clock_attempts_remain = 3
+    while not clock_is_set and clock_attempts_remain:
+        setres = system('sudo ./setclock.py')
+        if setres == 0:
+            clock_is_set = True
+        else:
+            clock_attempts_remain -= 1
+    if not clock_is_set:
+        sys.exit(-1)
 
 
 def pre_run():
@@ -48,6 +62,8 @@ def pre_run():
     cfg = { k:base_config[k] for k in base_config }
     cfg['kconn'] = kconn
     cfg['sconn'] = sconn
+
+    synchronizeSystemClock()
 
     return cfg
 
