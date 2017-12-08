@@ -106,6 +106,7 @@ var tablenames = {
         'Date': { n: 'date', u: '' },
         'Node Name': { n: 'node_name', u: '' },
         'host.ip': { n: 'diagnostic.host.ip', u: '' },
+        'host.public_ip': { n: 'diagnostic.host.public_ip', u: '' },
         'host.name': { n: 'diagnostic.host.name', u: '' },
         'host.uptime': { n: 'diagnostic.host.uptime', u: '' },
         'service.uptime': { n: 'diagnostic.service.uptime', u: '' },
