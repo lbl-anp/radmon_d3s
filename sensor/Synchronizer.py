@@ -19,6 +19,9 @@ class Synchronizer():
             'timeout': 5,
         }
 
+        for a in kwargs:
+            self.c[a] = kwargs[a]
+
         self.last_delta = None
 
 
