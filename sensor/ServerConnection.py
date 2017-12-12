@@ -7,7 +7,7 @@ import json
 import datetime
 import socket
 import os
-
+import netifaces
 
 class ServerConnection(object):
     def __init__(self, server_config):
@@ -41,7 +41,7 @@ class ServerConnection(object):
         }
         # return local IP. We'll get the public IP from the http request,
         # and there's no good reason to trust the device for that
-        self.ip = self._myLocalIP()
+        self.interfaces = self._myInterfaces()
         self.hostname = self._myHost()
         self.initUptime = self._sysUptime();
 
@@ -67,7 +67,7 @@ class ServerConnection(object):
                 'date': now.isoformat(),
                 'diagnostic': {
                     'host': {
-                        'ip': self.ip,
+                        'ifaces': self.interfaces,
                         'name': self.hostname,
                         'uptime': self._strTimeDelta(self._sysUptime()),
                     },
@@ -102,7 +102,7 @@ class ServerConnection(object):
             'date': now.isoformat(),
             'diagnostic': {
                 'host': {
-                    'ip': self.ip,
+                    'ifaces': self.interfaces,
                     'name': self.hostname,
                     'uptime': self._strTimeDelta(self._sysUptime()),
                 },
@@ -155,11 +155,27 @@ class ServerConnection(object):
             return requests.get('https://ipinfo.io').json()['ip']
         except:
             return 'dunno'
+    def _myInterfaces(self):
+        try:
+            ifnames = netifaces.interfaces()
+            return { ifn: netifaces.ifaddresses(ifn) for ifn in ifnames }
+        except Exception as e:
+            print('Exception getting network IF info', e)
+            return 'dunno'
     def _myLocalIP(Self):
         try:
-            import socket
-            return socket.gethostbyname(socket.getfqdn())
-        except:
+            ifaces = netifaces.interfaces()
+            x = [netifaces.ifaddresses(ifn) for ifn in ifaces]
+            print('local ip',x)
+            y = [q[netifaces.AF_INET] for q in x]
+            print('local ip',y)
+
+            return 'skipped'
+            #return [netifaces.ifaddresses(ifn)[netifaces.AF_INET][0]['addr'] for ifn in ifaces]
+            #import socket
+            #return socket.gethostbyname(socket.getfqdn())
+        except Exception as e:
+            print('Exception getting Local IP', e)
             return 'dunno'
 
     def getParams(self, params = {}):
