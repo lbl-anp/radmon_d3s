@@ -73,8 +73,14 @@ var makeUL = function(target, data, names) {
 var makeLeft = function(name, d) {
     console.log(d.sensor_data);
     var tdl = senselems[name].tdl;    
-    var cdiv = document.createElement('div');
     removeChildren(tdl);
+
+    var title = document.createElement('a');
+    title.innerText = name;
+    title.href = 'app/status/' + name;
+    tdl.appendChild(title);
+     
+    var cdiv = document.createElement('div');
     tdl.appendChild(cdiv);
     var carry = [];
     carry.push(['bin','count']);
