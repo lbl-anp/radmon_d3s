@@ -133,17 +133,19 @@ var addLocalIPs = function(d) {
         var ifnames = Object.keys(d.diagnostic.host.ifaces);
         for (var i=0; i<ifnames.length; i++) {
             var ifn = ifnames[i];
-            var ifd = d.diagnostic.host.ifaces[ifn];
-            if (ifd) {
-               var inet = ifd[2];
-               if (inet) {
-                   var first_inet = inet[0];
-                   if (first_inet) {
-                       var addr = first_inet.addr;
-                       if (addr) ips[ifn] = addr;
-                   }
-               }
-           }
+            if (ifn != 'lo') {
+                var ifd = d.diagnostic.host.ifaces[ifn];
+                if (ifd) {
+                    var inet = ifd[2];
+                    if (inet) {
+                        var first_inet = inet[0];
+                        if (first_inet) {
+                            var addr = first_inet.addr;
+                            if (addr) ips[ifn] = addr;
+                        }
+                    }
+                }
+            }
         }
     }
     li.innerText = 'host.ifaces: ' + JSON.stringify(ips);
