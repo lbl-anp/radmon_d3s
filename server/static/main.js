@@ -68,10 +68,11 @@ var makeUL = function(target, data, names) {
         } catch (e) {
         }
     }
+    return ul;
 };
 
 var makeLeft = function(name, d) {
-    console.log(d.sensor_data);
+    // console.log(d.sensor_data);
     var tdl = senselems[name].tdl;    
     removeChildren(tdl);
 
@@ -111,7 +112,7 @@ var tablenames = {
     message_fields: {
         'Date': { n: 'date', u: '' },
         'Node Name': { n: 'node_name', u: '' },
-        'host.ip': { n: 'diagnostic.host.ip', u: '' },
+        // 'host.ip': { n: 'diagnostic.host.ip', u: '' },
         'host.public_ip': { n: 'diagnostic.host.public_ip', u: '' },
         'host.name': { n: 'diagnostic.host.name', u: '' },
         'host.uptime': { n: 'diagnostic.host.uptime', u: '' },
@@ -125,9 +126,35 @@ var makeCenter = function(name, d) {
     makeUL(tdc, d.sensor_data, tablenames.sensor_fields);
 };
 
+var addLocalIPs = function(d) {
+    var li = document.createElement('li');
+    var ips = {};
+    if (d && d.diagnostic && d.diagnostic.host && d.diagnostic.host.ifaces) {
+        var ifnames = Object.keys(d.diagnostic.host.ifaces);
+        for (var i=0; i<ifnames.length; i++) {
+            var ifn = ifnames[i];
+            var ifd = d.diagnostic.host.ifaces[ifn];
+            if (ifd) {
+               var inet = ifd[2];
+               if (inet) {
+                   var first_inet = inet[0];
+                   if (first_inet) {
+                       var addr = first_inet.addr;
+                       if (addr) ips[ifn] = addr;
+                   }
+               }
+           }
+        }
+    }
+    li.innerText = 'host.ifaces: ' + JSON.stringify(ips);
+    return li;
+};
+
 var makeRight = function(name, d) {
     var tdr = senselems[name].tdr;    
-    makeUL(tdr, d, tablenames.message_fields);
+    var ul = makeUL(tdr, d, tablenames.message_fields);
+    ul.appendChild(addLocalIPs(d));
+    
     var el = document.createElement('p');
     now = new Date();
     var latest = new Date(0);
