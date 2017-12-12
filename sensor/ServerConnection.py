@@ -39,7 +39,9 @@ class ServerConnection(object):
             'sconn': 1,
             'kconn': 1,
         }
-        self.ip = self._myIP()
+        # return local IP. We'll get the public IP from the http request,
+        # and there's no good reason to trust the device for that
+        self.ip = self._myLocalIP()
         self.hostname = self._myHost()
         self.initUptime = self._sysUptime();
 
@@ -148,9 +150,15 @@ class ServerConnection(object):
         except:
             pass
         return host
-    def _myIP(self):
+    def _myPublicIP(self):
         try:
             return requests.get('https://ipinfo.io').json()['ip']
+        except:
+            return 'dunno'
+    def _myLocalIP(Self):
+        try:
+            import socket
+            return socket.gethostbyname(socket.getfqdn())
         except:
             return 'dunno'
 
