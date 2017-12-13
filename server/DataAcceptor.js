@@ -117,15 +117,16 @@ DataAcceptor.prototype.setupDefaults = function() {
 
 
 DataAcceptor.prototype.handleParamsGet = function(req, res) {
-    var b = { node_name: req.params.name, token: req.query.token };
+    var b = JSON.parse(req.query.qstr);
+    console.log(b);
     if (this.pv.tokValid(b)) {
         res.status(200);
-        if (this.cparams.hasOwnProperty(b.node_name)) {
-            res.json(this.cparams[b.node_name]);
-            this.fireHook('getparams',b.node_name);
+        if (this.cparams.hasOwnProperty(b.identification.node_name)) {
+            res.json(this.cparams[b.identification.node_name]);
         } else {
             res.json({});
         }
+        this.fireHook('getparams',b.identification.node_name);
         return;
     }
     res.status(403);
@@ -141,7 +142,7 @@ DataAcceptor.prototype.handlePing = function(req, res) {
 
     if (this.pv.tokValid(b)) {
        try {
-           var node_name= b.node_name;
+           var node_name= b.identification.node_name;
            var cstate = this.getdevicestate(node_name);
            if (true) {
                var public_ip = req.headers['x-forwarded-for'];
@@ -176,7 +177,7 @@ DataAcceptor.prototype.handleDataPost = function(req, res) {
     var rvs = 403;
     // console.log(JSON.stringify(b,null,2));
     if (this.pv.tokValid(b)) {
-       var node_name= b.node_name;
+       var node_name= b.identification.node_name;
        var cstate = this.getdevicestate(node_name);
        if (!cstate) {
            console.log('unknown device: ' + node_name);

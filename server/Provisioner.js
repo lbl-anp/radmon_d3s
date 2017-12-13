@@ -1,7 +1,22 @@
+/*jshint esversion:6 */
 var fs = require('fs');
 var crypto = require('crypto');
 
-var MAX_PROV_ATTEMPTS = 5;
+// I could not get the node 9.3.0 crypto sha512 module
+// to work correctly, so I am using this one instead. I think
+// it was an encoding issue on my end, but I gave up trying
+// to resolve it.
+var sha512 = require('js-sha512').sha512;
+
+const DEBUG_AUTH = false;
+const MAX_PROV_ATTEMPTS = 5;
+
+var dB = function(n,b) {
+    if (DEBUG_AUTH) {
+        console.log('DBG ' + n + '\t:\t' + b.toString('base64'));
+    }
+};
+
 
 
 var Provisioner = function(provisioned_fn, provtoks_fn) {
@@ -38,19 +53,40 @@ Provisioner.prototype.loadProvisioned = function() {
 };
 
 Provisioner.prototype.tokValid = function(b) {
-    if (b.hasOwnProperty('token') && 
-        b.hasOwnProperty('node_name') &&
-        this.provisioned.hasOwnProperty(b.node_name) &&
-        this.provisioned[b.node_name].hasOwnProperty('tok_hash') &&
-        this.provisioned[b.node_name].hasOwnProperty('serial_number') &&
-        this.provisioned[b.node_name].hasOwnProperty('salt')) {
-        var hash = this.hash(b.token,
-                            [this.provisioned[b.node_name].serial_number,
-                             this.provisioned[b.node_name].salt,
-                            ]);
-        return hash === this.provisioned[b.node_name].tok_hash;
-    }
-    return false;
+    if (!b.hasOwnProperty('identification')) return false;
+
+    var id = b.identification;
+
+    if (!(id.hasOwnProperty('node_name') &&
+          id.hasOwnProperty('salt') &&
+          id.hasOwnProperty('salted_tok'))) return false;
+
+    var node_name = id.node_name;
+
+    if (!this.provisioned.hasOwnProperty(node_name)) return false;
+
+    var pi = this.provisioned[node_name];
+
+    if  (!(pi.hasOwnProperty('tok_hash') &&
+           pi.hasOwnProperty('serial_number') &&
+           pi.hasOwnProperty('salt'))) return false;
+
+    var tok_hash = Buffer.from(pi.tok_hash, 'base64');
+    var id_salt  = Buffer.from(id.salt, 'base64');
+    var combined = Buffer.concat([tok_hash, id_salt]);
+
+    dB('tok_hash', tok_hash);
+    dB('id_salt',  id_salt);
+    dB('combined', combined);
+
+    var h1_lcl = Buffer.from(sha512.create().update(combined).digest());
+    var h1_rem = Buffer.from(id.salted_tok, 'base64');
+
+    dB('h1_lcl', h1_lcl);
+    dB('h1_rem', h1_rem);
+
+    return !Buffer.compare(h1_lcl,h1_rem);
+
 };
 
 Provisioner.prototype.loadProvToks = function() {
@@ -88,25 +124,37 @@ function thingInThings(things, kname, kvalue) {
     return null;
 }
 
-Provisioner.prototype.create_new = function(name, serial, nows) {
-    var new_token = this.makeRandString(64);
-    var new_salt  = this.makeRandString(64);
-    var new_hash  = this.hash(new_token,[serial,new_salt]);
+Provisioner.prototype.createNew = function(name, serial, nows) {
+    var new_token = crypto.randomBytes(64);
+    var new_salt  = crypto.randomBytes(64);
+    var sbuffer   = Buffer.from(serial);
+    var combined  = Buffer.concat([new_token, new_salt, sbuffer]);
+    var new_hash = Buffer.from(sha512.create().update(combined).digest());
+
+    dB('new_token',new_token);
+    dB('new_salt',new_salt);
+    dB('sbuffer',sbuffer);
+    dB('combined',combined);
+    dB('new_hash',new_hash);
+
+    var new_salt_str = new_salt.toString('base64');
+
     var rv = {
         new_entry: {
             serial_number: serial,
             node_name: name,
             provisioning_attempts: 1,
             prov_date: nows,
-            salt: new_salt,
-            tok_hash: new_hash,
+            salt: new_salt_str,
+            tok_hash: new_hash.toString('base64'),
         },
         return_data: {
             serial_number: serial,
             node_name: name,
             provisioning_attempts: 1,
             prov_date: nows,
-            token: new_token,
+            server_salt: new_salt_str,
+            token: new_token.toString('base64'),
         },
     };
     return rv;
@@ -133,10 +181,9 @@ Provisioner.prototype.provision = function(req) {
                return null;
            }
         } else if (serial_in_use) {
-            // console.log('serial_in_use: ' + serial_in_use);
             var provisioning_attempts = this.provisioned[serial_in_use].provisioning_attempts;
             if (provisioning_attempts < MAX_PROV_ATTEMPTS) {
-                d = this.create_new(serial_in_use, serial, nows);
+                d = this.createNew(serial_in_use, serial, nows);
                 provisioning_attempts += 1;
                 d.new_entry.provisioning_attempts = provisioning_attempts;
                 d.return_data.provisioning_attempts = provisioning_attempts;
@@ -147,21 +194,13 @@ Provisioner.prototype.provision = function(req) {
                 return null;
             }
         } else {
-            d = this.create_new(name, serial, nows);
+            d = this.createNew(name, serial, nows);
             this.provisioned[name] = d.new_entry;
             this.saveProvisioned();
             return d.return_data;
         }
     }
     return null;
-};
-
-Provisioner.prototype.hash = function(password, salts) {
-    var hash = crypto.createHmac('sha512', password);
-    for (var i=0; i<salts.length; i++) {
-        hash.update(salts[i]);
-    }
-    return hash.digest('hex');
 };
 
 Provisioner.prototype.saveProvisioned = function() {
