@@ -70,11 +70,10 @@ class ServerConnection(object):
             self._addLoginTok(d)
             url = self.config['mail_fetch_url'] + '?qstr=' + quote_plus(json.dumps(d))
             res = requests.get(url, timeout = 20)
-            print('getmail', res.text)
-            return res;
+            return res.json()
         except Exception as e:
             print('mail_fetch_exception',e)
-            return None
+            return [] 
 
     def ping(self):
         try:
@@ -89,7 +88,6 @@ class ServerConnection(object):
             self._addDiagInfo(data)
 
             res = requests.post(self.config['ping_url'], json = data, timeout=20)
-            print(res)
             self.stats['ping_attempts'] += 1
             if self.help.httpOK(res.status_code):
                 self.stats['consec_net_errs'] = 0

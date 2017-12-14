@@ -3,10 +3,11 @@
 from sys import exit
 from os import system
 import time
-import datetime
 import kromek
 import ServerConnection
 import TimerLoop
+import Backgrounder
+import json
 
 base_config = {
     'upload_period': 60,
@@ -15,6 +16,8 @@ base_config = {
     'tick_length': 0.5,
     'sensor_params': { },
     'max_consec_net_errs': 10,
+    'mail_check_period': 7200,
+    'bground_check_period': 5,
 }
 
 
@@ -50,11 +53,12 @@ def pre_run():
     server_config = {
         'provisioning_token_path': './provisioning_token.json',
         'url_base': 'https://skunkworks.lbl.gov/radmon',
+        #'url_base': 'http://localhost:9090/radmon',
         'credentials_path': './credentials.json',
         'params_path': './device_params.json',
         'device_name': None,
         'device_type': 'kromek_d3s',
-        'device_serial': ser['serial'],
+        'device_serial': ser['serial'].encode('ascii'),
     }
 
     sconn = ServerConnection.ServerConnection(server_config)
@@ -99,6 +103,7 @@ def readSensor(cfg):
 class CapHandlers(object):
     def __init__(self, cfg):
         self.cfg = cfg
+        self.backgrounder = Backgrounder.Backgrounder()
 
     def takeReading(self, name, now):
         sdata = readSensor(self.cfg)
@@ -117,6 +122,26 @@ class CapHandlers(object):
     def cfgCheck(self, name, now):
         self.cfg['sconn'].getParams(self.cfg)
 
+    def messageType(self, msg, t):
+        mt = msg.get('type',None)
+        if mt:
+            return mt == t
+        return false
+
+    def mailCheck(self, name, now):
+        messages = self.cfg['sconn'].getMail()
+        for message in messages:
+            if messageType(message,'shell_script'):
+                self.backgrounder.startNew(message)
+            elif messageType(message,'restart'):
+                sys.exit(0)
+
+    def backgroundCheck(self, name, now):
+        count, res = self.backgrounder.checkResults()
+        if count:
+            pass
+
+
 
 
 def mymain(cfg):
@@ -128,15 +153,18 @@ def mymain(cfg):
     te.addHandler(ch.takeReading,  cfg['upload_period'])
     te.addHandler(ch.checkNetErrs, cfg['upload_period'])
     te.addHandler(ch.cfgCheck,     cfg['config_check_period'])
+    te.addHandler(ch.mailCheck,    cfg['mail_check_period'])
+    te.addHandler(ch.backgroundCheck, cfg['bground_check_period'])
 
     te.run(cfg['tick_length'])
 
 
 if __name__ == '__main__':
+#    if True:
     try:
         cfg = pre_run();
         if cfg:
             mymain(cfg)
     except Exception as e:
-        print('Whoops!')
-        print(e)
+        print('Whoops!',e)
+
