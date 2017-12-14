@@ -30,11 +30,11 @@ CredDB.prototype.setup = function() {
 };
 
 CredDB.prototype.add = function(data,cb) {
-    console.log('CredDB.add()',data);
+    // console.log('CredDB.add()',data);
     var sql = 'INSERT OR REPLACE INTO credentials (name,serial,jsblob) VALUES(?,?,?)';
     this.db.run(sql,[data.node_name,data.serial_number,JSON.stringify(data)],function(aerr,ares) {
         if (aerr) console.log('adderr',aerr);
-        if (ares) console.log('addres',ares);
+        // if (ares) console.log('addres',ares);
         cb(ares);
     });
 };
@@ -56,12 +56,10 @@ CredDB.prototype.get = function(name,cb) {
 };
 
 CredDB.prototype.getAll = function(cb) {
-    console.log('cdb.getAll()');
     var sql = 'SELECT name FROM credentials';
     this.db.all(sql,[],function(gerr,rows) {
         if (gerr || !rows.length) return cb([]);
         names = rows.map(function(r) { return r.name; });
-        console.log('names',names);
         return cb(names);
     });
 };
