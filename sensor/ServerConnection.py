@@ -9,8 +9,15 @@ import socket
 import os
 import netifaces
 import hashlib
-import secrets
 import base64 as b64
+
+# RPi only has Pi 3.4 which has no "secrets"
+no_secrets = False
+try:
+    import secrets
+except:
+    import random
+    no_secrets = True
 
 DEBUG_AUTH = False
 
@@ -256,9 +263,15 @@ class _Helpers():
     def __init__(self):
         self.initUptime = self.sysUptime()
     def makeRandomBytes(self, N):
-        return secrets.token_bytes(N)
+        if no_secrets:
+            return bytes(os.urandom(N))
+        else:
+            return secrets.token_bytes(N)
     def makeRandomString(self, N):
-        return ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(N))
+        if no_secrets:
+            return ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(N))
+        else:
+            return ''.join(secrets.choice(string.ascii_uppercase + string.ascii_lowercase + string.digits) for _ in range(N))
     def bytes2b64str(self, b):
         return b64.b64encode(b).decode('ascii')
     def b64str2bytes(self, s):
