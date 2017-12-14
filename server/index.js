@@ -29,7 +29,7 @@ var setup_debug_hooks = function(da) {
 if (require.main === module) {
 
     var dev_config = {
-        'provisioned_clients_path': './provisioned_clients.json',
+        'provisioned_clients_path': './provisioned.sqlite',
         'provisioning_tokens_path': './provisioning_tokens.json',
         'device_params_path': './sensor_params.json',
         'mailbox': {
