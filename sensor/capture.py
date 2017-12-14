@@ -22,6 +22,7 @@ base_config = {
 
 
 def synchronizeSystemClock():
+    print('synchronizeSystemClock()')
     clock_is_set = False
     clock_attempts_remain = 3
     while not clock_is_set and clock_attempts_remain:
@@ -51,9 +52,9 @@ def pre_run():
         return None
 
     server_config = {
-        'provisioning_token_path': './provisioning_token.json',
+        #'provisioning_token_path': './provisioning_token.json',
         'url_base': 'https://skunkworks.lbl.gov/radmon',
-        #'url_base': 'http://localhost:9090/radmon',
+        'url_base': 'http://localhost:9090/radmon',
         'credentials_path': './credentials.json',
         'params_path': './device_params.json',
         'device_name': None,
@@ -67,7 +68,8 @@ def pre_run():
     cfg['kconn'] = kconn
     cfg['sconn'] = sconn
 
-    synchronizeSystemClock()
+    if False:
+        synchronizeSystemClock()
 
     return cfg
 
@@ -103,7 +105,6 @@ def readSensor(cfg):
 class CapHandlers(object):
     def __init__(self, cfg):
         self.cfg = cfg
-        self.backgrounder = Backgrounder.Backgrounder()
 
     def takeReading(self, name, now):
         sdata = readSensor(self.cfg)
@@ -122,24 +123,31 @@ class CapHandlers(object):
     def cfgCheck(self, name, now):
         self.cfg['sconn'].getParams(self.cfg)
 
+
+
+class MessageHandler(object):
+    def __init__(self,sconn):
+        self.sconn = sconn
+        self.backgrounder = Backgrounder.Backgrounder()
     def messageType(self, msg, t):
         mt = msg.get('type',None)
         if mt:
             return mt == t
         return false
-
-    def mailCheck(self, name, now):
-        messages = self.cfg['sconn'].getMail()
+    def checkNew(self, name, now):
+        messages = self.sconn.getMail()
         for message in messages:
-            if messageType(message,'shell_script'):
+            if self.messageType(message,'shell_script'):
                 self.backgrounder.startNew(message)
-            elif messageType(message,'restart'):
+            elif self.messageType(message,'restart'):
                 sys.exit(0)
-
-    def backgroundCheck(self, name, now):
-        count, res = self.backgrounder.checkResults()
+    def checkComplete(self, name, now):
+        count, reses = self.backgrounder.checkResults()
         if count:
-            pass
+            for msgid in reses:
+                self.sconn.respondMail(msgid,reses[msgid])
+
+
 
 
 
@@ -148,13 +156,14 @@ def mymain(cfg):
 
     ch = CapHandlers(cfg)
     te = TimerLoop.TimerLoop()
+    mh = MessageHandler(cfg['sconn'])
 
     te.addHandler(ch.doPing,       cfg['ping_period'])
     te.addHandler(ch.takeReading,  cfg['upload_period'])
     te.addHandler(ch.checkNetErrs, cfg['upload_period'])
     te.addHandler(ch.cfgCheck,     cfg['config_check_period'])
-    te.addHandler(ch.mailCheck,    cfg['mail_check_period'])
-    te.addHandler(ch.backgroundCheck, cfg['bground_check_period'])
+    te.addHandler(mh.checkNew,     cfg['mail_check_period'])
+    te.addHandler(mh.checkComplete,cfg['bground_check_period'])
 
     te.run(cfg['tick_length'])
 

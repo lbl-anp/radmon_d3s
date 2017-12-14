@@ -95,7 +95,9 @@ Mailbox.prototype.handleRespond = function(req, res) {
                 var response = responses.shift();
                 if (response.hasOwnProperty('msg_id') &&
                     response.msg_id.length &&
-                    response.hasOwnProperty('result')) {
+                    response.hasOwnProperty('type') &&
+                    (response.type == 'response') &&
+                    response.hasOwnProperty('payload')) {
                     kosher_responses.push(response);
                 }
             }
@@ -107,7 +109,7 @@ Mailbox.prototype.handleRespond = function(req, res) {
                     var kosher_response = kosher_responses.shift();
                     this.mq.inbox[node_name].push(kosher_response);
                     if (!rv.accepted) rv.accepted = [];
-                    rv.accepted.push(koser_response.msg_id);
+                    rv.accepted.push(kosher_response.msg_id);
                 }
                 rv.messsage = 'ok';
                 this.fireHook('respondmail',node_name);

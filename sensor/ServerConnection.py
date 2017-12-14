@@ -46,6 +46,7 @@ class ServerConnection(object):
         setIfNeeded('ping_url', self.config['url_base'] + '/device/ping')
         setIfNeeded('params_url', self.config['url_base'] + '/device/params')
         setIfNeeded('mail_fetch_url', self.config['url_base'] + '/device/mbox/fetch')
+        setIfNeeded('mail_post_url', self.config['url_base'] + '/device/mbox/respond')
 
         self.stats = {
             'consec_net_errs': 0,
@@ -69,6 +70,28 @@ class ServerConnection(object):
     def getStats(self):
         return { k:self.stats[k] for k in self.stats }
 
+
+    def respondMail(self,msg_id,payload):
+        try:
+            print('respondMail()')
+            d = {
+                'responses': [
+                    {
+                        'msg_id': msg_id,
+                        'type': 'response',
+                        'payload': payload,
+                    },
+                ],
+            }
+            self._addLoginTok(d)
+            url = self.config['mail_post_url']
+            res = requests.post(url, json = d, timeout=20)
+            return res
+        except Exception as e:
+            print('problem_posting_mail_response',e)
+            return None
+
+        
 
     def getMail(self):
         try:

@@ -19,7 +19,11 @@ var setup_debug_hooks = function(da) {
     da.setHook('ping',w);
     da.setHook('getparams',w);
     da.setHook('fetchmail',w);
-    da.setHook('respondmail',w);
+    da.setHook('respondmail', function(hname, sname) {
+        w(hname, sname);
+        r = da.mb.getResponses();
+        console.log('responses',JSON.stringify(r,null,2));
+    });
 };
 
 if (require.main === module) {
