@@ -130,7 +130,7 @@ class Backgrounder(object):
                     'setup': self.activities[msg_id]['setup'],
                 }
                 del self.activities[msg_id]
-        print('rcount',rcount,'results',results)
+        # print('rcount',rcount,'results',results)
         return rcount, results
 
 
