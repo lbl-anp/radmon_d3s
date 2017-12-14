@@ -55,29 +55,32 @@ var safeJSONParse = function(s) {
 
 Mailbox.prototype.handleFetch = function(req, res) {
     var b = safeJSONParse(req.query.qstr);    
-    if (this.pv.tokValid(b)) {
-        res.status(200);
-        var node_name = b.identification.node_name;
-        var avail_messages = this.mq.outbox[node_name];
-        if (avail_messages && 
-            Array.isArray(avail_messages) &&
-            avail_messages.length) {
-            var max_messages = this.config.max_per_get;
-            var ret_messages = [];
-            while (max_messages && avail_messages.length) {
-                ret_messages.push(avail_messages.shift());
-                max_messages -= 1;
-            }
-            res.json(ret_messages);
+    var tthis = this;
+    this.pv.tokValid(b,function(v) {
+        if (v) {
+            res.status(200);
+            var node_name = b.identification.node_name;
+            var avail_messages = tthis.mq.outbox[node_name];
+            if (avail_messages && 
+                Array.isArray(avail_messages) &&
+                avail_messages.length) {
+                var max_messages = tthis.config.max_per_get;
+                var ret_messages = [];
+                while (max_messages && avail_messages.length) {
+                    ret_messages.push(avail_messages.shift());
+                    max_messages -= 1;
+                }
+                res.json(ret_messages);
 
-        } else {
-            res.json([]);
+            } else {
+                res.json([]);
+            }
+            tthis.fireHook('fetchmail',node_name);
+            return;
         }
-        this.fireHook('fetchmail',node_name);
-        return;
-    }
-    res.status(403);
-    res.json({ message: 'survey says: Buzz!' });
+        res.status(403);
+        res.json({ message: 'survey says: Buzz!' });
+    });
 };
 
 Mailbox.prototype.handleRespond = function(req, res) {
@@ -86,45 +89,47 @@ Mailbox.prototype.handleRespond = function(req, res) {
     var rv = { message: 'nope.', };
     var rvs = 403;
 
-    if (this.pv.tokValid(b)) {
-        var node_name = b.identification.node_name;
-        var responses = b.responses;
-        if (responses && Array.isArray(responses) && responses.length) {
-            var kosher_responses = [];
-            while (responses.length) {
-                var response = responses.shift();
-                if (response.hasOwnProperty('msg_id') &&
-                    response.msg_id.length &&
-                    response.hasOwnProperty('type') &&
-                    (response.type == 'response') &&
-                    response.hasOwnProperty('payload')) {
-                    kosher_responses.push(response);
+    var tthis = this;
+    this.pv.tokValid(b,function(v) {
+        if (v) {
+            var node_name = b.identification.node_name;
+            var responses = b.responses;
+            if (responses && Array.isArray(responses) && responses.length) {
+                var kosher_responses = [];
+                while (responses.length) {
+                    var response = responses.shift();
+                    if (response.hasOwnProperty('msg_id') &&
+                        response.msg_id.length &&
+                        response.hasOwnProperty('type') &&
+                        (response.type == 'response') &&
+                        response.hasOwnProperty('payload')) {
+                        kosher_responses.push(response);
+                    }
                 }
-            }
-            if (kosher_responses.length) {
-                if (!this.mq.inbox.hasOwnProperty(node_name)) {
-                    this.mq.inbox[node_name] = [];
+                if (kosher_responses.length) {
+                    if (!tthis.mq.inbox.hasOwnProperty(node_name)) {
+                        tthis.mq.inbox[node_name] = [];
+                    }
+                    while (kosher_responses.length) {
+                        var kosher_response = kosher_responses.shift();
+                        tthis.mq.inbox[node_name].push(kosher_response);
+                        if (!rv.accepted) rv.accepted = [];
+                        rv.accepted.push(kosher_response.msg_id);
+                    }
+                    rv.messsage = 'ok';
+                    tthis.fireHook('respondmail',node_name);
+                } else {
+                    rvs = 406;
+                    rv.message = 'No responses provided were acceptable.';
                 }
-                while (kosher_responses.length) {
-                    var kosher_response = kosher_responses.shift();
-                    this.mq.inbox[node_name].push(kosher_response);
-                    if (!rv.accepted) rv.accepted = [];
-                    rv.accepted.push(kosher_response.msg_id);
-                }
-                rv.messsage = 'ok';
-                this.fireHook('respondmail',node_name);
             } else {
                 rvs = 406;
-                rv.message = 'No responses provided were acceptable.';
+                rv.message = 'No responses to post';
             }
-        } else {
-            rvs = 406;
-            rv.message = 'No responses to post';
         }
-    }
-
-    res.status(rvs);
-    res.json(rv);
+        res.status(rvs);
+        res.json(rv);
+    });
 };
 
 module.exports = Mailbox;
