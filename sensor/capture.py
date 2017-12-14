@@ -52,9 +52,9 @@ def pre_run():
         return None
 
     server_config = {
-        #'provisioning_token_path': './provisioning_token.json',
+        'provisioning_token_path': './provisioning_token.json',
         'url_base': 'https://skunkworks.lbl.gov/radmon',
-        'url_base': 'http://localhost:9090/radmon',
+        #'url_base': 'http://localhost:9090/radmon',
         'credentials_path': './credentials.json',
         'params_path': './device_params.json',
         'device_name': None,
