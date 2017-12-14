@@ -1,6 +1,8 @@
 /* jshint esversion: 6 */
 var Provisioner   = require('./Provisioner');
-var fs = require('fs');
+var Mailbox       = require('./Mailbox');
+var fs            = require('fs');
+var express       = require('express');
 
 function copyWithoutKey(ind, banned) {
     var od = {};
@@ -18,17 +20,22 @@ var DataAcceptor = function(dev_config) {
     this.pv = new Provisioner(this.config.provisioned_clients_path,
                               this.config.provisioning_tokens_path);
     this.pv.load();
+    this.mb = new Mailbox(dev_config.mailbox, this.pv, this.fireHook.bind(this));
     this.setupDefaults();
     this.loadSensorParams();
     this.hooks = {};
+
 };
 
 DataAcceptor.prototype.setupRoutes = function(router) {
-    router.post('/push',         this.handleDataPost.bind(this));
-    router.post('/ping',         this.handlePing.bind(this));
-    router.head('/time',         this.handleTimeHead.bind(this));
-    router.get('/params/:name',  this.handleParamsGet.bind(this));
-    router.post('/setup/:name',  this.handleProvision.bind(this));
+    router.post('/push',          this.handleDataPost.bind(this));
+    router.post('/ping',          this.handlePing.bind(this));
+    router.head('/time',          this.handleTimeHead.bind(this));
+    router.get('/params',         this.handleParamsGet.bind(this));
+    router.post('/setup/:name',   this.handleProvision.bind(this));
+    var mbrouter = express.Router();
+    router.use('/mbox', mbrouter);
+    this.mb.setupRoutes(mbrouter);
 };
 
 DataAcceptor.prototype.setHook = function(name,func) {
@@ -115,10 +122,18 @@ DataAcceptor.prototype.setupDefaults = function() {
     });
 };
 
+var safeJSONParse = function(s) {
+    try {
+        return JSON.parse(s);
+    } catch(e) {
+        console.log('Parse exception',e);
+    }
+    return {};
+};
+
 
 DataAcceptor.prototype.handleParamsGet = function(req, res) {
-    var b = JSON.parse(req.query.qstr);
-    console.log(b);
+    var b = safeJSONParse(req.query.qstr);
     if (this.pv.tokValid(b)) {
         res.status(200);
         if (this.cparams.hasOwnProperty(b.identification.node_name)) {

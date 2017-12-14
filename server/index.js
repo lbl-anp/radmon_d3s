@@ -18,6 +18,8 @@ var setup_debug_hooks = function(da) {
     da.setHook('push',w);
     da.setHook('ping',w);
     da.setHook('getparams',w);
+    da.setHook('fetchmail',w);
+    da.setHook('respondmail',w);
 };
 
 if (require.main === module) {
@@ -26,6 +28,9 @@ if (require.main === module) {
         'provisioned_clients_path': './provisioned_clients.json',
         'provisioning_tokens_path': './provisioning_tokens.json',
         'device_params_path': './sensor_params.json',
+        'mailbox': {
+            'max_per_get': 5,
+        },
     };
     var app_config = {
         // for future
@@ -41,6 +46,8 @@ if (require.main === module) {
 
     da.setupRoutes(devrouter);
     ar.setupRoutes(approuter);
+
+    da.mb.queueNew('d3s_f9Ke0q5tFc','shell_script','echo Hello, World!');
 
     toprouter.get('/',              file_helpers.handleRoot);
     toprouter.get('/static/:name',  file_helpers.handleStaticFile);

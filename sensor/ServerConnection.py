@@ -29,13 +29,16 @@ class ServerConnection(object):
             raise Exception('server_url_base_not_provided')
         if not self.config.get('device_serial',None):
             raise Exception('device_serial_identifier_not_provided')
-        if not self.config.get('device_type',None):
-            self.config['device_type'] = 'generic'
 
-        if not self.config.get('post_url',None):
-                self.config['post_url'] = self.config['url_base'] + '/device/push'
-        if not self.config.get('ping_url',None):
-                self.config['ping_url'] = self.config['url_base'] + '/device/ping'
+        def setIfNeeded(name,value):
+            if not self.config.get(name,None):
+                self.config[name] = value
+
+        setIfNeeded('device_type','generic')
+        setIfNeeded('post_url', self.config['url_base'] + '/device/push')
+        setIfNeeded('ping_url', self.config['url_base'] + '/device/ping')
+        setIfNeeded('params_url', self.config['url_base'] + '/device/params')
+        setIfNeeded('mail_fetch_url', self.config['url_base'] + '/device/mbox/fetch')
 
         self.stats = {
             'consec_net_errs': 0,
@@ -60,6 +63,19 @@ class ServerConnection(object):
         return { k:self.stats[k] for k in self.stats }
 
 
+    def getMail(self):
+        try:
+            print('getMail()')
+            d = {}
+            self._addLoginTok(d)
+            url = self.config['mail_fetch_url'] + '?qstr=' + quote_plus(json.dumps(d))
+            res = requests.get(url, timeout = 20)
+            print('getmail', res.text)
+            return res;
+        except Exception as e:
+            print('mail_fetch_exception',e)
+            return None
+
     def ping(self):
         try:
             print('ping()')
@@ -69,7 +85,7 @@ class ServerConnection(object):
                 'date': now.isoformat(),
             }
 
-            self._addLoginTok(data);
+            self._addLoginTok(data)
             self._addDiagInfo(data)
 
             res = requests.post(self.config['ping_url'], json = data, timeout=20)
@@ -152,8 +168,6 @@ class ServerConnection(object):
             },
         }
     def getParams(self, params = {}):
-        if not self.config.get('params_url',None):
-                self.config['params_url'] = self.config['url_base'] + '/device/params/' + self.creds['node_name']
         self._paramsLocalOverride(params)
         self._paramsRemoteOverride(params)
 
