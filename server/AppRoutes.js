@@ -1,12 +1,17 @@
+var lp = require('./LongPoller.js');
 
 var AppRoutes = function(app_config, dataacceptor) {
     this.config = app_config;
     this.da = dataacceptor;
+    this.lp = new lp();
+    this.da.setHook('push',this.lp.newChange.bind(this.lp));
+    this.da.setHook('ping',this.lp.newChange.bind(this.lp));
 };
 
 AppRoutes.prototype.setupRoutes = function(router) {
     router.get('/sensornames',   this.handleListGet.bind(this));
     router.get('/status/:name',  this.handleStatusGet.bind(this));
+    router.get('/poll',          this.lp.poll.bind(this.lp));
 };
 
 AppRoutes.prototype.handleListGet = function(req, res) {
