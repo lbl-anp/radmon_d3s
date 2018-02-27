@@ -273,6 +273,45 @@ var makeDeviceLayout = function(senslist,cb) {
     return cb();
 };
 
+var pollResultHandler = function(pollres) {
+    var targets = {};
+    Object.keys(pollres).forEach(function(actionname) {
+        pollres[actionname].forEach(function(targetname) {
+            targets[targetname] = 1;
+        });
+    });
+
+    async.each(Object.keys(targets), function(camn, cb) {
+        checkData(camn, function(cerr, cd) {
+            cb();
+        });
+    },function(err) {
+    });
+
+};
+
+var rePoll = function(cb, sid = 999999) {
+    url = '/radmon/app/poll?id=' + sid;
+    rerunner = function() { rePoll(cb, sid); };
+    try {
+        getJSON(url, function(pollerr, pollres) {
+            if (pollerr) {
+                console.log('Poll Err: ' + pollerr);
+                window.setTimeout(rerunner, 1000);
+            } else {
+                
+                console.log('Poll res: ' + JSON.stringify(pollres,null,2));
+                cb(pollres);
+                window.setTimeout(rerunner, 250);
+            }
+        });
+    } catch (e) {
+        console.log('Poll went sideways: ' + JSON.stringify(e,null,2));
+        window.setTimeout(rerunner, 1000);
+    }
+};
+
+/*
 var startTimer = function() {
     var senslist = Object.keys(senselems);
     async.each(senslist, function(sensn,cb) {
@@ -285,17 +324,19 @@ var startTimer = function() {
         window.setTimeout(startTimer, 5000);
     });
 };
+*/
 
 var init = function() {
+    var session_id = makeRandomString(10);
     google.charts.load('current', {'packages':['corechart','bar']});
-
     google.charts.setOnLoadCallback(function() {
         console.log('google charts loaded');
         getSensorList(function(err,insensors) {
             console.log(insensors);
             if (!err) {
                 makeDeviceLayout(insensors, function() {
-                    startTimer();
+                    rePoll(pollResultHandler, session_id);
+                    // startTimer();
                 });
             }
         });
