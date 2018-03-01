@@ -1,10 +1,15 @@
+/*jshint esversion: 6 */
 var lp = require('./LongPoller.js');
+var dbconfig = require('./mysql_creds.json');
+var storer   = require('./storer.js');
 
 var AppRoutes = function(app_config, dataacceptor) {
     this.config = app_config;
     this.da = dataacceptor;
     this.lp = new lp();
+    this.st = new storer(dbconfig.db);
     this.da.setHook('push',this.lp.newChange.bind(this.lp));
+    this.da.setHook('push',this.dbstore.bind(this));
     this.da.setHook('ping',this.lp.newChange.bind(this.lp));
 };
 
@@ -19,6 +24,13 @@ AppRoutes.prototype.handleListGet = function(req, res) {
     var devlist = this.da.getdevicelist();
     res.json(devlist);
 };
+
+AppRoutes.prototype.dbstore = function(evname, devname, devdata = null) {
+    this.st.store(devname, devdata, function(sterr,stres) {
+        if (sterr) console.error(sterr);
+    });
+};
+
 
 AppRoutes.prototype.handleStatusGet = function(req, res) {
     // console.log('GET sensor status!');
