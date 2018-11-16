@@ -19,7 +19,7 @@ mysqlWrap.prototype.qwrap = function(q, cb, tries = 3) {
                     connection.query(q,function(qe,r) {
                         connection.release();
                         if (qe && qe.code && (qe.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR')) {
-                            console.log('retrying query because ENQUEUE_AFTER_FATAL');
+                            console.warn('retrying query because ENQUEUE_AFTER_FATAL');
                             dbthis.qwrap(q,cb,tries-1);
                             return;
                         } else {
@@ -29,7 +29,7 @@ mysqlWrap.prototype.qwrap = function(q, cb, tries = 3) {
                     });
                 } else {
                     console.warn('retrying query because pool connection error');
-                    console.log(conerr);
+                    console.warn(conerr);
                     dbthis.qwrap(q,cb,tries-1);
                     return;
                 }

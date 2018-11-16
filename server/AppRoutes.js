@@ -20,7 +20,7 @@ AppRoutes.prototype.setupRoutes = function(router) {
 };
 
 AppRoutes.prototype.handleListGet = function(req, res) {
-    console.log('GET list of sensors');
+    console.info('GET list of sensors');
     var devlist = this.da.getdevicelist();
     res.json(devlist);
 };
@@ -33,7 +33,7 @@ AppRoutes.prototype.dbstore = function(evname, devname, devdata = null) {
 
 
 AppRoutes.prototype.handleStatusGet = function(req, res) {
-    // console.log('GET sensor status!');
+    // console.debug('GET sensor status!');
     var name = req.params.name;
     var cstate = this.da.getdevicestate(name) || null;
     rv = {};

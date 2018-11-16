@@ -39,10 +39,10 @@ var DataDB = function(config) {
         vals = [ config.max_name_length ];
         this.qwrap({sql: qs, values: vals},function(err, rows) {
             if (err) {
-                console.log(err);
+                console.error(err);
                 return cb(err,null);
             }
-            console.log(rows);
+            console.debug(rows);
             return cb(err, rows);
         });
     };

@@ -12,7 +12,7 @@ var port = process.env.TURKEY_PORT || 9090;
 var setup_debug_hooks = function(da) {
 
     var w = function(hname,sname) {
-        console.log('Device action: [' + hname + '] ' + sname);
+        console.info('Device action: [' + hname + '] ' + sname);
     };
     da.setHook('provision',w);
     da.setHook('push',w);
@@ -22,7 +22,7 @@ var setup_debug_hooks = function(da) {
     da.setHook('respondmail', function(hname, sname) {
         w(hname, sname);
         r = da.mb.getResponses();
-        console.log('responses',JSON.stringify(r,null,2));
+        console.debug('responses',JSON.stringify(r,null,2));
     });
 };
 

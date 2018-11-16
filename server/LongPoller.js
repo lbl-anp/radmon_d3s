@@ -36,10 +36,10 @@ LongPoller.prototype.poll = function(req, res) {
 LongPoller.prototype.finishPoll = function(subscriber, sid) {
     if (subscriber && subscriber.res) {
         try {
-            console.log('finishPoll for ' + sid);
+            console.debug('finishPoll for ' + sid);
             subscriber.res.json(subscriber.changes);
         } catch (e) {
-            console.log('finishPoll for ' + sid + ' ERR: ' + e);
+            console.debug('finishPoll for ' + sid + ' ERR: ' + e);
         }
         subscriber.changes = null;
         subscriber.res = null;
