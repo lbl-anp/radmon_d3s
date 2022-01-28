@@ -6,13 +6,19 @@ import time
 from kromek.protocol import BufferUnderflowError
 from kromek.transport.transport import Transport, Connection
 
-_patterns = ['/dev/ttyUSB[\d]?', '/dev/ttyACM[\d]?', '/dev/tty.usbmodem[\d]+']
+_patterns = [r"/dev/ttyUSB[\d]?", r"/dev/ttyACM[\d]?", r"/dev/tty.usbmodem[\d]+"]
 
 
 class UsbSerialConnection(Connection):
-
     def __init__(self, path):
-        self._conn = serial.Serial(path, 115200, serial.EIGHTBITS, serial.PARITY_NONE, serial.STOPBITS_ONE, .001)
+        self._conn = serial.Serial(
+            path,
+            115200,
+            serial.EIGHTBITS,
+            serial.PARITY_NONE,
+            serial.STOPBITS_ONE,
+            0.001,
+        )
 
     def _send(self, message):
         data = message.write()
@@ -22,12 +28,12 @@ class UsbSerialConnection(Connection):
             written += self._conn.write(data[written:])
 
     def _recv(self, message):
-        buf = b''
+        buf = b""
         # Read until we have enough bytes for the message
         while True:
             ready = self._conn.inWaiting()
             while ready <= 0:
-                time.sleep(.01)
+                time.sleep(0.01)
                 ready = self._conn.inWaiting()
                 continue
             buf += self._conn.read()
@@ -42,11 +48,10 @@ class UsbSerialConnection(Connection):
 
 
 class UsbSerialTransport(Transport):
-
     def discover(self):
         ret = []
-        for dev_file in os.listdir('/dev'):
-            path = '/dev/%s' % dev_file
+        for dev_file in os.listdir("/dev"):
+            path = "/dev/%s" % dev_file
             for pattern in _patterns:
                 if re.search(pattern, path):
                     ret.append((str(path),))

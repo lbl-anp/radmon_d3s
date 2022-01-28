@@ -1,30 +1,39 @@
-import logging
 import os
-import serial
 import struct
-import re
-
-from usb1 import USBContext, USBDevice, USBDeviceHandle, USBEndpoint, USBInterface, USBError
+from usb1 import (
+    USBContext,
+    # USBDevice,
+    # USBDeviceHandle,
+    # USBEndpoint,
+    # USBInterface,
+    USBError,
+)
 from kromek.protocol import BufferUnderflowError
 from kromek.transport.transport import Transport, Connection
 
 
-def _find_tty_for_device(vendor_id, product_id=None, frm='/sys/devices/pci0000:00'):
+def _find_tty_for_device(vendor_id, product_id=None, frm="/sys/devices/pci0000:00"):
     for name in os.listdir(frm):
         if name in frm:
             continue
         full_path = frm + os.path.sep + name
-        if 'ttyACM' == name[0:6] or 'ttyUSB' == name[0:6]:
-            path = full_path + os.path.sep + 'device' + os.path.sep + 'uevent'
+        if "ttyACM" == name[0:6] or "ttyUSB" == name[0:6]:
+            path = full_path + os.path.sep + "device" + os.path.sep + "uevent"
             if os.path.exists(path):
                 with open(path) as d:
                     for line in d.readlines():
-                        ids = line.split('=')[1].split('/')
+                        ids = line.split("=")[1].split("/")
                         if len(ids) >= 2:
-                            vendor = struct.unpack('>H', ids[0].zfill(4).decode('hex'))[0]
-                            product = struct.unpack('>H', ids[1].zfill(4).decode('hex'))[0]
-                            if vendor_id == vendor and (product_id is None or product_id == product):
-                                print('/dev/' + name)
+                            vendor = struct.unpack(">H", ids[0].zfill(4).decode("hex"))[
+                                0
+                            ]
+                            product = struct.unpack(
+                                ">H", ids[1].zfill(4).decode("hex")
+                            )[0]
+                            if vendor_id == vendor and (
+                                product_id is None or product_id == product
+                            ):
+                                print("/dev/" + name)
         elif os.path.isdir(full_path):
             path = _find_tty_for_device(vendor_id, product_id, full_path)
             if path is not None:
@@ -33,7 +42,6 @@ def _find_tty_for_device(vendor_id, product_id=None, frm='/sys/devices/pci0000:0
 
 
 class UsbCdcAcmConnection(Connection):
-
     def __init__(self, devstr):
         self._dev = None
         self._data_out = None
@@ -45,7 +53,7 @@ class UsbCdcAcmConnection(Connection):
                 break
 
         if self._dev is None:
-            raise RuntimeError('Failed to find %s', devstr)
+            raise RuntimeError("Failed to find %s", devstr)
 
         self._usb_handle = self._dev.open()
         for iface in self._dev.iterSettings():
@@ -59,30 +67,38 @@ class UsbCdcAcmConnection(Connection):
                     self._data_in = iface[0].getAddress()
 
         if self._data_in is None or self._data_out is None:
-            raise RuntimeError('Failed to find bulk transfer for %s', devstr)
+            raise RuntimeError("Failed to find bulk transfer for %s", devstr)
 
         # config = self._dev.get_active_configuration()
         # self.control_iface = config[(0, 0)]
         # self.data_iface = config[(1, 0)]
-        #
-        # self.control_out = \
-        #     usb.util.find_descriptor(
-        #         self.control_iface, custom_match=lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_OUT)
-        # self.control_in = \
-        #     usb.util.find_descriptor(
-        #         self.control_iface, custom_match=lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_IN)
-        #
-        # self.data_out = \
-        #     usb.util.find_descriptor(
-        #         self.data_iface, custom_match=lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_OUT)
-        # self.data_in = \
-        #     usb.util.find_descriptor(
-        #         self.data_iface, custom_match=lambda e: endpoint_direction(e.bEndpointAddress) == ENDPOINT_IN)
+
+        # self.control_out = usb.util.find_descriptor(
+        #     self.control_iface,
+        #     custom_match=lambda e: endpoint_direction(e.bEndpointAddress)
+        #     == ENDPOINT_OUT,
+        # )
+        # self.control_in = usb.util.find_descriptor(
+        #     self.control_iface,
+        #     custom_match=lambda e: endpoint_direction(e.bEndpointAddress)
+        #     == ENDPOINT_IN,
+        # )
+
+        # self.data_out = usb.util.find_descriptor(
+        #     self.data_iface,
+        #     custom_match=lambda e: endpoint_direction(e.bEndpointAddress)
+        #     == ENDPOINT_OUT,
+        # )
+        # self.data_in = usb.util.find_descriptor(
+        #     self.data_iface,
+        #     custom_match=lambda e: endpoint_direction(e.bEndpointAddress)
+        #     == ENDPOINT_IN,
+        # )
 
         self._init(115200, 8, 0, 0)
 
     def _init(self, baud_rate, data_bits, stop_bits, parity):
-        msg = struct.pack('<IBBB', baud_rate, stop_bits, data_bits, parity)
+        msg = struct.pack("<IBBB", baud_rate, stop_bits, data_bits, parity)
         self._usb_handle.controlWrite(0x20 | 0x01, 0x20, 0, 0, msg)
 
     def _send(self, message):
@@ -90,15 +106,15 @@ class UsbCdcAcmConnection(Connection):
         self._usb_handle.bulkWrite(self._data_out, data, 1000)
 
     def _recv(self, message):
-        buf = ''
+        buf = ""
         # Read until we have enough bytes for the message
         while True:
             try:
                 buf += self._usb_handle.bulkRead(self._data_in, 8192, 1000)
             except USBError as err:
-                if hasattr(err, 'value') and err.value == -7:
+                if hasattr(err, "value") and err.value == -7:
                     continue
-                if hasattr(err, 'errno') or err.errno == 110:
+                if hasattr(err, "errno") or err.errno == 110:
                     continue
                 raise err
             try:
@@ -115,7 +131,6 @@ class UsbCdcAcmConnection(Connection):
 
 
 class UsbTransport(Transport):
-
     def discover(self):
         ret = []
         ctx = USBContext()

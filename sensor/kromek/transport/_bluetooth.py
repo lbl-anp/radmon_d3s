@@ -1,11 +1,9 @@
-
 import bluetooth
 from kromek.protocol import BufferUnderflowError
 from kromek.transport.transport import Transport, Connection
 
 
 class BluetoothConnection(Connection):
-
     def __init__(self, device):
         self._sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
         self._sock.connect((device[0], 5))
@@ -16,7 +14,7 @@ class BluetoothConnection(Connection):
         self._sock.send(data)
 
     def _recv(self, message):
-        buf = ''
+        buf = ""
         # Read until we have enough bytes for the message
         while True:
             try:
@@ -34,12 +32,11 @@ class BluetoothConnection(Connection):
 
 
 class BluetoothTransport(Transport):
-
     def discover(self):
         ret = []
         devs = bluetooth.discover_devices(lookup_names=True, lookup_class=True)
         for d in devs:
-            if '55:33:' == d[0][0:6]:
+            if "55:33:" == d[0][0:6]:
                 ret.append(d)
         return ret
 

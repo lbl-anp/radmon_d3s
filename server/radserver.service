@@ -13,4 +13,3 @@ ExecStart=/usr/bin/node /home/dgj/projects/radmon/server/index.js
 
 [Install]
 WantedBy=multi-user.target
-

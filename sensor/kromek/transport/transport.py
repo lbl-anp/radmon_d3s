@@ -2,7 +2,6 @@ from kromek import Message
 
 
 class Connection(object):
-
     def send(self, message):
         """
         Write a message using the transport
@@ -61,5 +60,3 @@ class Transport(object):
         :return: a connection for a device
         """
         pass
-
-
