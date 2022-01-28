@@ -1,29 +1,30 @@
 import logging
+from .transport import Transport, Connection
 
 _transport_types = {}
 
-from .transport import Transport, Connection
-
-#try:
+# try:
 #    from ._bluetooth import BluetoothTransport
 #    _transport_types['bluetooth'] = BluetoothTransport
-#except ImportError as e:
+# except ImportError as e:
 #    logging.debug('Failed to import bluetooth.  %s', e)
 
 try:
     from ._usb import UsbTransport
-    _transport_types['usb'] = UsbTransport
+
+    _transport_types["usb"] = UsbTransport
 except ImportError as e:
-    logging.debug('Failed to import USB.  %s', e)
+    logging.debug("Failed to import USB.  %s", e)
 
 try:
     from ._serial import UsbSerialTransport
-    _transport_types['serial'] = UsbSerialTransport
+
+    _transport_types["serial"] = UsbSerialTransport
 except ImportError as e:
-    logging.debug('Failed to import serial.  %s', e)
+    logging.debug("Failed to import serial.  %s", e)
 
 if len(_transport_types) <= 0:
-    raise ImportError('No transports available')
+    raise ImportError("No transports available")
 
 
 def get_transport(transport_type):
@@ -56,3 +57,12 @@ def connect(device, transport=None):
             transport = get_transport(transport)
         trans = transport
     return trans.connect(device)
+
+
+__all__ = [
+    "Transport",
+    "Connection",
+    "get_transport",
+    "discover",
+    "connect",
+]
